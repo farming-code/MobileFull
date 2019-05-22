@@ -68,7 +68,7 @@ Vue.config.productionTip = false;
  *  test(测试环境)  反向代理 放在手机上看
  *  production(生产环境) 给钱老板dist版本
  */
-EnvironmentalScience('production');
+EnvironmentalScience('test');
 
 /* eslint-disable no-new */
 new Vue({
