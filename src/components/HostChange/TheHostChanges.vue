@@ -99,7 +99,7 @@ export default {
       var currentdate = sessionStorage.getItem('time');
       this.startTime = new Date(currentdate);
       this.$http
-        .get(`${this.$path.php}/index/lml/changes`, {
+        .get(`${this.$path.php}/mobile/modification/load-all`, {
           params: { date: currentdate }
         })
         .then(res => {
@@ -145,7 +145,7 @@ export default {
       sessionStorage.setItem('time', currentdate);
       // 发送axios请求
       this.$http
-        .get(`${this.$path.php}/index/lml/changes`, {
+        .get(`${this.$path.php}/mobile/modification/load-all`, {
           params: { date: currentdate }
         })
         .then(res => {
@@ -173,7 +173,7 @@ export default {
       }
       var currentdate = year + seperator1 + month + seperator1 + strDate;
       this.$http
-        .get(`${this.$path.php}/index/lml/changes`, {
+        .get(`${this.$path.php}/mobile/modification/load-all`, {
           params: { date: currentdate }
         })
         .then(res => {
@@ -205,7 +205,7 @@ export default {
       var currentdate = year + seperator1 + month + seperator1 + strDate;
       sessionStorage.setItem('time', currentdate);
       this.$http
-        .get(`${this.$path.php}/index/lml/changes`, {
+        .get(`${this.$path.php}/mobile/modification/load-all`, {
           params: { date: currentdate }
         })
         .then(res => {

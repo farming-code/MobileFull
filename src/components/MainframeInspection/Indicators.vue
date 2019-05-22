@@ -6,14 +6,19 @@
       <img src="../../assets/images/background.png">
       <ul class="clearfix">
         <li
-          :class="{ 'current': addressLpar === true }"
-          @click.stop="addressSpace(1)">
+          :class="{'current': firstTabCurrent === 'address'}"
+          @click.stop="addressSpace('address')">
           <a href="javascript:;">地址空间</a>
         </li>
         <li
-          :class="{ 'current': addressLpar === false }"
-          @click.stop="addressSpace(2)">
+          :class="{ 'current': firstTabCurrent === 'lpar' }"
+          @click.stop="addressSpace('lpar')">
           <a href="javascript:;">各LPAR</a>
+        </li>
+        <li
+          :class="{ 'current': firstTabCurrent === 'ch' }"
+          @click.stop="addressSpace('ch')">
+          <a href="javascript:;">渠道交易</a>
         </li>
       </ul>
     </div>
@@ -54,25 +59,49 @@
               <li
                 v-for="(item,i) in thirdTitle"
                 :key="i"
-                :class="item.status === 0 ? 'bg_green' : item.status === 1 ? 'bg_yellow' : 'bg_red'"
-                @click.stop="getDetail(item.name,item.lpar,false)"
+                :class="[item.status == 0 ? 'bg_green' : item.status == 1 ? 'bg_yellow' : 'bg_red',currentData === item.name ? 'current' :'']"
+                @click.stop="getDetail(item.name,item.lpar,item.display)"
               >
                 <div class="mt_content">
-                  <div class="mt_content_left">{{ item.name }}</div>
+                  <div class="mt_content_left ellipsis">{{ item.display }}</div>
                   <div class="mt_content_right">
                     <div class="front">
                       <p>{{ item.value }}</p>
-                      <div>当前</div>
+                      <div>{{ item.index_type === 'ch' ? '交易率' : '当前' }}</div>
                     </div>
                     <div class="normal">
                       <p>{{ item.reference }}</p>
-                      <div>参考值</div>
+                      <div>{{ item.index_type === 'ch'? '响应时间': '参考值' }}</div>
                     </div>
                   </div>
                 </div>
               </li>
             </ul>
           </div>
+        </div>
+      </div>
+    </div>
+    <!-- 整个模态背景框 -->
+    <div
+      :class="isNotLoading ? 'is-show' : ''"
+      class="model_content">
+      <div
+        style="width:100%;height:100%"
+        class="lds-ellipsis">
+        <div>
+          <div />
+        </div>
+        <div>
+          <div />
+        </div>
+        <div>
+          <div />
+        </div>
+        <div>
+          <div />
+        </div>
+        <div>
+          <div />
         </div>
       </div>
     </div>
@@ -90,15 +119,18 @@ export default {
       height:'', //三级列表的高度
       tabWidth:'', //tab栏的宽度
 
-      addressLpar:true,  // 一级标题选中状态
+      firstTabIsClick: false, //判断是否通过一级菜单点击进去的
+      firstTabCurrent: 'address', //一级标题选中状态
       active:'', //二级标题选中状态
-      currentData:'' ,//三级数据的选中的状态
+      currentData:'' ,//三级数据的选中的状态//选中状态的name名称
+      display:'' ,//三级数据选中状态中文
       lpar:'', //lpar唯一值
 
       tabList:[], // 二级标题的数据
       thirdTitle:[], //三级单独详情数据
       categories:[], //ecahrts时间数组
       values:[], //echarts 值的数组
+      responses: [], //响应时间数据化
 
       ifInit: true, // 避免重复点击
       scroll:true,//判断是否需要重新 new scroll
@@ -106,9 +138,8 @@ export default {
       isRender:true, // 判断是否初始化渲染
       addressClick:false, //判断是否从一级菜单直接点击进去的
 
-      isReflash: false,
-      isToggle: false,
-      isMany:false
+      isReflash: false, //是否刷新
+      isNotLoading: true// 是否不加载
     };
   },
   watch: {
@@ -124,14 +155,9 @@ export default {
     }
   },
   created(){
-    this.isToggle = this.$route.params.isToggle;
-    let address = localStorage.getItem('addressLpar');
-    if(address === 'false'){
-      this.addressLpar = false;
-    }else{
-      this.addressLpar = true;
+    if(localStorage.getItem('addressLpar')) {
+      this.firstTabCurrent = localStorage.getItem('addressLpar');
     }
-
   },
   mounted(){
     if(this.isRender) {
@@ -186,23 +212,21 @@ export default {
       });
       return width;
     },
-    // 判断地址空间和各LPAR之间的切换
-    addressSpace(num){
-      this.ifInit = false;
-      if(num === 1 ){
-        this.addressLpar = true;
-      }else if(num === 2){
-        this.addressLpar = false;
-      }
+    // 判断地址空间,各LPAR,渠道交易,之间的切换
+    addressSpace(select){
+      //   this.isNotLoading = false; // 正在加载中
+      this.firstTabIsClick = true; // 是通过一级菜单点击进去的
+      this.firstTabCurrent = select; //判断选中的是哪一个
+      this.ifInit = false; //避免重复点击
       this.isRender = false; //判断是否初始化数据
       this.scroll = true; //判断是否重新 new scroll
-      this.addressClick = true;
       this.getSecondMenu();
-      localStorage.setItem('addressLpar',this.addressLpar);
+      localStorage.setItem('addressLpar',this.firstTabCurrent);
     },
     // 获取二级数据
     getSecondMenu(){
-      let state = this.addressLpar === true ? 'address' : 'lpar'; // 判断是地址空间还是lpar
+      this.isNotLoading = false; // 正在加载中
+      let state = this.firstTabCurrent; // 判断是地址空间还是lpar或渠道交易率
       this.$http.get(`${this.$path.node}/mobile/yps/load_tab_list?index_type=${state}`)
         .then(data => {
           this.tabList = data.data.tabs; //二级标题的数据
@@ -212,7 +236,7 @@ export default {
           }
           else if(localStorage.getItem('tabSecond') && this.addressClick === true){ //如果点击,localStorage里面有值,但是是从一级菜单点击进来的
             this.tabSelected(data.data.tabs[0].name); //选中第一个数据
-          }else if (localStorage.getItem('tabSecond') && (this.isReflash || this.isToggle) ) {
+          }else if (localStorage.getItem('tabSecond') && this.isReflash  ) {
             this.tabSelected(localStorage.getItem('tabSecond'));
           }
           else if(!this.ifInit){
@@ -222,8 +246,7 @@ export default {
             this.tabSelected(localStorage.getItem('tabSecond'));
           }
 
-          this.isToggle = false;
-          this.isReflash = false;
+          // this.isReflash = false;
           this.$nextTick(() => {
             this.tabWidth = this.getChildrenWidth('#wrapper>ul li') + 'px';
             if(document.querySelector('#wrapper>ul')) {
@@ -238,8 +261,10 @@ export default {
       istrue : 点击进来的是true ,非点击进来的是false
     */
     tabSelected(name,istrue) {
+      this.isNotLoading = false; // 正在加载中
       // 判断用户是否重复点击
       if(this.active === name  && this.ifInit && !this.isReflash) {
+        this.isNotLoading = true;
         return;
       }else {
         this.ifInit = true;
@@ -255,74 +280,68 @@ export default {
       localStorage.setItem('tabSecond',this.active);
     },
     getThirdMenu(istrue){
-      this.$http.get(`${this.$path.node}/mobile/yps/load_index_list?index_type=${this.addressLpar === true ? 'address' : 'lpar'}&index_sub_type=${this.active}`)
+      this.isNotLoading = false; // 正在加载中
+      this.$http.get(`${this.$path.node}/mobile/yps/load_index_list?index_type=${this.firstTabCurrent}&index_sub_type=${this.active}`)
         .then(data => {
           this.thirdTitle = data.data.indexes; //三级列表数组
           // 通过nextTick获取更新后的DOM
-          this.$nextTick(function(){
+          this.$nextTick(() => {
             if(document.querySelector('#wrapper>ul')){
               this.height = this.getChildrenHeight('.mt_one>ul li') + 'px';
               this.tabWidth = this.getChildrenWidth('#wrapper>ul li') + 'px';
               document.querySelector('#wrapper>ul').style.width = this.tabWidth;
             }
           });
-          if (istrue === undefined) { //如果不是通过tab栏点击进来的, 直接走入详情
-            this.currentData = this.thirdTitle[0].name;
-            this.lpar = this.thirdTitle[0].lpar;
-            this.getDetail(this.currentData,this.lpar,undefined);
-          }else if(istrue === true){  //如果是通过tab栏点击进来的, 把点击的标志位传入
-            this.currentData =  this.thirdTitle[0].name;
-            this.lpar =  this.thirdTitle[0].lpar;
-            this.getDetail(this.currentData,this.lpar,istrue);
-          }else if(localStorage.getItem('thirdCurrent') && localStorage.getItem('lpar')){ //如果是通过其他方式点击进来的
+          if(this.isReflash === true) { //如果是刷新的
             this.currentData = localStorage.getItem('thirdCurrent');
             this.lpar = localStorage.getItem('lpar');
-            this.getDetail(this.currentData,this.lpar,undefined);
-          }else {
+            this.display = localStorage.getItem('thirdCurrentDisplay');
+          }else if(istrue || this.firstTabIsClick === true) { //如果是通过二级菜单点击过来的
             this.currentData = this.thirdTitle[0].name;
             this.lpar = this.thirdTitle[0].lpar;
-            this.getDetail(this.currentData,this.lpar,undefined);
+            this.display = this.thirdTitle[0].display;
+            this.firstTabIsClick === false;
+          }else if(localStorage.getItem('thirdCurrent') && localStorage.getItem('lpar')){
+            this.currentData = localStorage.getItem('thirdCurrent');
+            this.lpar = localStorage.getItem('lpar');
+            this.display = localStorage.getItem('thirdCurrentDisplay');
+          } else {
+            this.currentData = this.thirdTitle[0].name;
+            this.lpar = this.thirdTitle[0].lpar;
+            this.display = this.thirdTitle[0].display;
           }
+
+          this.isReflash = false;
+
+          this.getDetail(this.currentData,this.lpar,this.display);
         });
     },
-    getDetail(name,lpar,istrue){
-      if(istrue === false) { //如果是通过自己点进来的
-        this.currentData = name;
-        this.lpar = lpar;
-      }else if(istrue === undefined ) {//不是通过自己点击进来的, 有可能通过二级菜单点击进来的
-        if(this.addressClick === true) {
-          this.currentData = this.thirdTitle[0].name;
-          this.lpar = this.thirdTitle[0].lpar;
-        }
-        else if(localStorage.getItem('thirdCurrent') && localStorage.getItem('lpar')){ //但是localStorage里面有数据
-          this.currentData = localStorage.getItem('thirdCurrent');
-          this.lpar =  localStorage.getItem('lpar');
-        }else {
-          this.currentData = this.thirdTitle[0].name;
-          this.lpar = this.thirdTitle[0].lpar;
-        }
-      }
-      else{ //如果不是通过自己点击进来
-        if (this.addressClick === true) { //判断是否是从一级菜单点击进来的
-          this.currentData = this.thirdTitle[0].name;
-          this.lpar = this.thirdTitle[0].lpar;
-        }else { //如果不是通过自己点击进来,又不是通过一级菜单点击进来的
-          this.currentData = this.thirdTitle[0].name;
-          this.lpar = this.thirdTitle[0].lpar;
-        }
-      }
+    getDetail(name,lpar,display){
+      this.isNotLoading = false; // 正在加载中
+      this.currentData = name;
+      this.lpar = lpar;
+      this.display = display;
       localStorage.setItem('thirdCurrent', this.currentData);
       localStorage.setItem('lpar',this.lpar);
+      localStorage.setItem('thirdCurrentDisplay',this.display);
       this.addressClick = false;
-      this.$http.get(`${this.$path.node}/mobile/yps/load_index_detail?index_type=${this.addressLpar === true ? 'address' : 'lpar'}&index_sub_type=${this.active}&index_name=${this.currentData}&lpar=${this.lpar}`)
+      this.$http.get(`${this.$path.node}/mobile/yps/load_index_detail?index_type=${this.firstTabCurrent}&index_sub_type=${this.active}&index_name=${this.currentData}&lpar=${this.lpar}`)
         .then(data => {
-          this.categories = data.data.categories;
-          this.values = data.data.values;
-          this.DOMOperation(); // 每次DOM修改都会使mui 和 iscroll 重新 new
+          // 判断是否是渠道交易
+          if(this.firstTabCurrent === 'ch') {
+            this.categories = data.data.categories;
+            this.values = data.data.values;
+            this.responses = data.data.responses;
+            this.DOMChannelTrading();
+          }else {
+            this.categories = data.data.categories;
+            this.values = data.data.values;
+            this.DOMOperation(); // 每次DOM修改都会使mui 和 iscroll 重新 new
+          }
 
         });
     },
-    // DOM操作
+    // 地址空间和各Lpar的 DOM 操作
     DOMOperation(){
       // 初始化echarts
       const chart_img = document.querySelector('.echarts');
@@ -335,7 +354,7 @@ export default {
           // 标题
           title:{
             show:true,
-            text: this.currentData,
+            text: this.display,
             // 文字颜色
             textStyle: {
               color:'#7ECEF4',
@@ -515,13 +534,261 @@ export default {
               data: this.values
             }
           ]
-        });
+        },true);
         window.onresize = ()=>{
           this.resizeWorldMapContainer(chart_img);
           myChart.resize();
         };
       }
+      this.isNotLoading = true; //dom已经渲染完成, 加载完毕
     },
+    // 渠道交易的DOM操作
+    DOMChannelTrading(){
+      // 初始化echarts
+      const chart_img = document.querySelector('.echarts');
+      if (chart_img) {
+        // 用于使chart自适应高度和宽度,通过窗体宽高计算容器宽高
+        this.resizeWorldMapContainer(chart_img);
+        // 基于准备好的dom，初始化echarts实例
+        const myChart = this.echarts.init(chart_img);
+        myChart.setOption({
+          // 标题
+          title:{
+            show:true,
+            text: this.display,
+            // 文字颜色
+            textStyle: {
+              color:'#7ECEF4',
+              fontSize:14,
+              // fontWeight:400
+            },
+            x:'center',
+            y: 10
+          },
+          // 提示框组件
+          tooltip: {
+            // 触发方式
+            trigger: 'axis',
+            axisPointer: {
+              type:'line',
+              lineStyle: {
+                color: 'rgba(94,119,243,.5)',
+                width:2,
+                type:'solid'
+              }
+            }
+          },
+          // X轴配置项
+          xAxis: {
+            // x轴坐标是否显示
+            show:true,
+            position: 'bottom',
+            offset:4,
+            // 类型:
+            type: 'category',
+            // 强制设置坐标轴分割间隔
+            interval: 6,
+            // 数据
+            data: this.categories,
+            // 坐标轴两边留白策略{ false 不留白; true 留白}
+            boundaryGap:false,
+            // 坐标轴名称的文字样式
+            nameTextStyle:{
+              // padding:[0,10,0,0],
+              fontFamily:'Microsoft YaHei',
+            },
+            // 坐标轴 '刻度 '相关设置
+            axisTick:{
+              // 是否显示刻度
+              show:false,
+            },
+            // 标签刻度标签相关设置
+            axisLabel:{
+              show:true,
+              // 坐标轴刻度标签显示间隔
+              interval:'auto',
+              // interval:2,
+              fontSize:11,
+              color:'#727272',
+              align:'center'
+            },
+            // 坐标轴轴线相关设置
+            axisLine:{
+              show:false
+            }
+          },
+          // y轴配置
+          yAxis: [
+            {
+              // y轴坐标类型(不同的类型坐标轴会发生不同的变化)
+              type: 'value',
+              // y轴相对于默认位置的偏移
+              offset: 1,
+              // 坐标轴 '刻度 '相关设置
+              axisTick:{
+                // 是否显示刻度
+                show:false,
+                // 坐标轴的朝向(true是朝内, false朝外)
+                inside:true,
+                lineStyle: {
+                  opacity:0
+                },
+                textStyle:{
+                  color:'#fff'
+                }
+              },
+              axisLine:{
+                show:false
+              },
+              // 坐标轴名称显示位置
+              nameLocation:'center',
+              // 坐标轴两边留白策略
+              boundaryGap: false,
+              // 坐标轴名称的文字样式
+              nameTextStyle:{
+                color:'#000',
+                fontFamily:'Microsoft YaHei',
+              },
+              // 标签刻度标签相关设置
+              axisLabel:{
+                // 显示左侧内容
+                show:true,
+                // 距离坐标轴的距离
+                margin: -2,
+                // 刻度标签是否朝内,默认朝外
+                inside:true,
+                textStyle: {
+                  color:'#727272',
+                  fontSize:'11',
+                  align:'right'
+                }
+              },
+              // 坐标轴在grid区域中的分割线
+              splitLine: {
+                show:true,
+                interval: 1,
+                lineStyle: {
+                  type: 'dashed',
+                  color:['#ECEDFF']
+                }
+              },
+            },
+            {
+              // y轴坐标类型(不同的类型坐标轴会发生不同的变化)
+              type: 'value',
+              position:'right',
+              // 坐标轴 '刻度 '相关设置
+              axisTick:{
+                // 是否显示刻度
+                show:false,
+                // 坐标轴的朝向(true是朝内, false朝外)
+                inside:true,
+                lineStyle: {
+                  opacity:0
+                },
+                textStyle:{
+                  color:'#fff'
+                }
+              },
+              axisLine:{
+                show:false
+              },
+              // 坐标轴名称显示位置
+              nameLocation:'center',
+              // 坐标轴两边留白策略
+              boundaryGap: false,
+              // 坐标轴名称的文字样式
+              nameTextStyle:{
+                color:'#000',
+                fontFamily:'Microsoft YaHei',
+              },
+              // 标签刻度标签相关设置
+              axisLabel:{
+                // 显示左侧内容
+                show:true,
+                // 距离坐标轴的距离
+                margin: -4,
+                // 刻度标签是否朝内,默认朝外
+                inside:true,
+                textStyle: {
+                  color:'#727272',
+                  fontSize:'11',
+                  align:'left'
+                }
+              },
+              // 坐标轴在grid区域中的分割线
+              splitLine: {
+                show:true,
+                interval: 1,
+                lineStyle: {
+                  type: 'dashed',
+                  color:['#ECEDFF']
+                }
+              },
+            }
+          ],
+          // 距离上下左右的间距
+          // 绘图网格
+          grid: {
+            top: '20%',
+            bottom: '15%',
+            left: '12%',
+            right:'12%',
+          },
+          // 区域缩放
+          dataZoom: [{
+            type: 'inside',
+            start: 75,
+            end: 100
+          }],
+          // 数据显示
+          series: [
+            {
+              type:'line',
+              name:'响应时间',
+              smooth:true,
+              symbol: 'emptyCircle',
+              // 类型
+              showSymbol: false, //只有hover的时候显示
+              // 是否平滑曲线显示
+              yAxisIndex:1,
+              // 坐标轴显示数据
+              data: this.responses,
+              // 折线拐点标志的样式
+              itemStyle: {
+                // 默认边框颜色
+                normal: {
+                  color: '#6c86ff',
+                  borderWidth: 2
+                }
+              },
+              // 线条样式
+              lineStyle:{
+                color:'#3586e6', //5772e8
+                width:2,
+              }
+            },
+            {
+              type: 'bar',
+              name:'交易率',
+              data: this.values,
+              barWidth: 6,
+              itemStyle: {
+                normal: {
+                  color:'#d594f3',
+                  barBorderRadius: [30,30,0,0] // 柱状图边框圆角
+                }
+              }
+            }
+          ]
+        },true);
+        window.onresize = ()=>{
+          this.resizeWorldMapContainer(chart_img);
+          myChart.resize();
+        };
+      }
+      this.isNotLoading = true; //dom已经渲染完成, 加载完毕
+    }
 
   },
 };
@@ -530,6 +797,35 @@ export default {
 <style lang="less" scoped>
   ::-webkit-scrollbar { //去掉overflow:auto 下的滚动条
     display: none;
+  }
+  .is-show {
+    display: none;
+  }
+  .ellipsis {
+    overflow:hidden;
+    text-overflow: ellipsis;
+    white-space:nowrap;
+  }
+  // 下面选中状态的效果
+  .current {
+    .mt_content {
+      border: 2px solid #fff !important;
+      background-color: #f0f0ff !important;
+      .mt_content_left {
+        color: #333;
+        font-weight: 700;
+      }
+      .front {
+        p,div {
+          color: #494bea !important;
+        }
+      }
+      .normal {
+        p,div {
+          color: #333 !important;
+        }
+      }
+    }
   }
   .health_top {
     position: relative;
@@ -569,6 +865,8 @@ export default {
     ul {
       height: 180px;
       padding-left: 40px;
+      position: relative;
+      z-index: 10;
     }
 
     li {
@@ -576,17 +874,17 @@ export default {
       height: 50%;
       padding: 0 20px;
       padding-top: 40px;
-
       a {
         display: block;
         height: 50%;
         font-weight: 700;
-        font-size: 40px;
+        font-size: 36px;
         color: rgba(255, 255, 255, .5);
       }
     }
 
     li.current a {
+      font-size: 40px;
       color: #fff;
     }
   }
@@ -661,6 +959,7 @@ export default {
             width: 88%;
             height: 100%;
             border-radius: 16px;
+            border: 2px solid transparent;
             background-color: #fff;
 
             .mt_content_left {
@@ -794,6 +1093,177 @@ export default {
         border-bottom: 5px solid #416cfa;
         color: #416cfa;
       }
+    }
+  }
+  // 模态框
+  .model_content {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999999;
+    background-color: rgba(0,0,0,.4);
+    @keyframes lds-ellipsis3 {
+      0%, 25% {
+        left: 32px;
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+      50% {
+        left: 32px;
+        -webkit-transform: scale(1);
+        transform: scale(1);
+      }
+      75% {
+        left: 100px;
+      }
+      100% {
+        left: 168px;
+        -webkit-transform: scale(1);
+        transform: scale(1);
+      }
+    }
+    @-webkit-keyframes lds-ellipsis3 {
+      0%, 25% {
+        left: 32px;
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+      50% {
+        left: 32px;
+        -webkit-transform: scale(1);
+        transform: scale(1);
+      }
+      75% {
+        left: 100px;
+      }
+      100% {
+        left: 168px;
+        -webkit-transform: scale(1);
+        transform: scale(1);
+      }
+    }
+    @keyframes lds-ellipsis2 {
+      0% {
+        -webkit-transform: scale(1);
+        transform: scale(1);
+      }
+      25%, 100% {
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+    }
+    @-webkit-keyframes lds-ellipsis2 {
+      0% {
+        -webkit-transform: scale(1);
+        transform: scale(1);
+      }
+      25%, 100% {
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+    }
+    @keyframes lds-ellipsis {
+      0% {
+        left: 32px;
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+      25% {
+        left: 32px;
+        -webkit-transform: scale(1);
+        transform: scale(1);
+      }
+      50% {
+        left: 100px;
+      }
+      75% {
+        left: 168px;
+        -webkit-transform: scale(1);
+        transform: scale(1);
+      }
+      100% {
+        left: 168px;
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+    }
+    @-webkit-keyframes lds-ellipsis {
+      0% {
+        left: 32px;
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+      25% {
+        left: 32px;
+        -webkit-transform: scale(1);
+        transform: scale(1);
+      }
+      50% {
+        left: 100px;
+      }
+      75% {
+        left: 168px;
+        -webkit-transform: scale(1);
+        transform: scale(1);
+      }
+      100% {
+        left: 168px;
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+    }
+    .lds-ellipsis {
+      width: 200px !important;
+      height: 200px !important;
+      position: absolute;
+      left: 50%;
+      top: 40%;
+      transform: translate(-50%,-50%);
+    }
+    .lds-ellipsis > div {
+      position: absolute;
+      -webkit-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+      width: 40px;
+      height: 40px;
+    }
+    .lds-ellipsis div > div {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #f00;
+      position: absolute;
+      top: 100px;
+      left: 32px;
+      -webkit-animation: lds-ellipsis 1.6s cubic-bezier(0, 0.5, 0.5, 1) infinite forwards;
+      animation: lds-ellipsis 1.6s cubic-bezier(0, 0.5, 0.5, 1) infinite forwards;
+    }
+    .lds-ellipsis div:nth-child(1) div {
+      -webkit-animation: lds-ellipsis2 1.6s cubic-bezier(0, 0.5, 0.5, 1) infinite forwards;
+      animation: lds-ellipsis2 1.6s cubic-bezier(0, 0.5, 0.5, 1) infinite forwards;
+      background: #fff;
+    }
+    .lds-ellipsis div:nth-child(2) div {
+      -webkit-animation-delay: -0.8s;
+      animation-delay: -0.8s;
+      background: #f6f7fa;
+    }
+    .lds-ellipsis div:nth-child(3) div {
+      -webkit-animation-delay: -0.4s;
+      animation-delay: -0.4s;
+      background: #dadde4;
+    }
+    .lds-ellipsis div:nth-child(4) div {
+      -webkit-animation-delay: 0s;
+      animation-delay: 0s;
+      background: #c4c8cf;
+    }
+    .lds-ellipsis div:nth-child(5) div {
+      -webkit-animation: lds-ellipsis3 1.6s cubic-bezier(0, 0.5, 0.5, 1) infinite forwards;
+      animation: lds-ellipsis3 1.6s cubic-bezier(0, 0.5, 0.5, 1) infinite forwards;
+      background: #fff;
     }
   }
 </style>

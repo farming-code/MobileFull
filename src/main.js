@@ -23,6 +23,7 @@ Vue.component(DatetimePicker.name, DatetimePicker);
 // 按需加载echarts
 import echarts from 'echarts/lib/echarts'; // 按需引入echarts
 import 'echarts/lib/chart/line'; //引入折线charts
+import 'echarts/lib/chart/bar'; //引入折线charts
 import 'echarts/lib/component/title'; //控制标题
 import 'echarts/lib/component/tooltip'; //提示框组件
 import 'echarts/lib/component/axis'; //控制横纵坐标的
@@ -67,7 +68,7 @@ Vue.config.productionTip = false;
  *  test(测试环境)  反向代理 放在手机上看
  *  production(生产环境) 给钱老板dist版本
  */
-EnvironmentalScience('test');
+EnvironmentalScience('production');
 
 /* eslint-disable no-new */
 new Vue({

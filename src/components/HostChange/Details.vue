@@ -107,7 +107,7 @@ export default {
   methods: {
     init(){
       this.id=this.$route.params.id;
-      this.$http.get(`${this.$path.php}/index/lml/details`,{
+      this.$http.get(`${this.$path.php}/mobile/modification/load-detail`,{
         params:{id:this.id}
       })
         .then(res => {
