@@ -81,6 +81,10 @@ export default {
       this.getList();
     },60000);
   },
+  beforeDestroy() {
+    clearInterval(this.timeId);
+    this.timeId = null;
+  },
   methods:{
     getList(){
       this.$http.get(`${this.$path.node}/mobile/yps/load_auto_yj`)

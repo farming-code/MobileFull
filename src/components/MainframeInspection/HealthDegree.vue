@@ -95,6 +95,10 @@ export default {
       this.getAllList();
     }, 60000);
   },
+  beforeDestroy(){
+    clearInterval(this.timeId);
+    this.timeId = null;
+  },
   methods: {
     /**
       当传入的str 是jd 并且this.isActive为 false

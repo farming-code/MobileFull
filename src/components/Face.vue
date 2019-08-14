@@ -59,6 +59,12 @@ export default {
               path:'/HostChange/TheHostChanges',
               iconName:'icon-zhujibiangeng1',
               name:'主机变更'
+            },
+            {
+              id:'1003',
+              path:'/TreeDiagram',
+              iconName:'icon-ECOS',
+              name:'版本投产'
             }
           ]
         }

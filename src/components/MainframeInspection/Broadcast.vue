@@ -83,6 +83,10 @@ export default {
       this.getBroadcasts();
     },60000);
   },
+  beforeDestroy() {
+    clearInterval(this.timeId);
+    this.timeId = null;
+  },
   methods:{
     getBroadcasts(){
       this.$http.get(`${this.$path.node}/mobile/yps/load_broadcasts`)
